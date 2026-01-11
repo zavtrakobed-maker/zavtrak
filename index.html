@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Speedometer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .card {
+            background: #2a2a3e;
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid #3a3a4e;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .title {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .unit-btn {
+            background: #3a3a4e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .unit-btn:hover {
+            background: #4a4a5e;
+        }
+        
+        .gauge-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            margin-bottom: 30px;
+        }
+        
+        .speed-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        .speed-value {
+            color: white;
+            font-size: 60px;
+            font-weight: bold;
+            line-height: 1;
+        }
+        
+        .speed-unit {
+            color: #9ca3af;
+            font-size: 20px;
+            margin-top: 5px;
+        }
+        
+        .max-speed-box {
+            background: #3a3a4e;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .max-speed-label {
+            color: #9ca3af;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .max-speed-value {
+            color: #60a5fa;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .reset-btn {
+            background: #4a4a5e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .reset-btn:hover {
+            background: #5a5a6e;
+        }
+        
+        .control-btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .start-btn {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .start-btn:hover {
+            background: #2563eb;
+        }
+        
+        .stop-btn {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .stop-btn:hover {
+            background: #dc2626;
+        }
+        
+        .message {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        
+        .error-message {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+        }
+        
+        .info-message {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3b82f6;
+            color: #93c5fd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="title">⚡ Speedometer</div>
+                <button class="unit-btn" id="unitBtn">km/h</button>
+            </div>
+            
+            <div class="gauge-container">
+                <svg width="100%" height="100%" viewBox="0 0 200 200">
+                    <!-- Background arc -->
+                    <path id="bgArc" d="M 30 170 A 85 85 0 1 1 170 170" 
+                          fill="none" stroke="#374151" stroke-width="20" stroke-linecap="round"/>
+                    
+                    <!-- Speed arc -->
+                    <path id="speedArc" d="M 30 170 A 85 85 0 1 1 170 170" 
+                          fill="none" stroke="url(#gradient)" stroke-width="20" stroke-linecap="round"
+                          stroke-dasharray="0 267" style="transition: stroke-dasharray 0.3s"/>
+                    
+                    <!-- Gradient definition -->
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#3b82f6"/>
+                            <stop offset="50%" style="stop-color:#8b5cf6"/>
+                            <stop offset="100%" style="stop-color:#ec4899"/>
+                        </linearGradient>
+                    </defs>
+                    
+                    <!-- Needle -->
+                    <g id="needle" style="transition: transform 0.3s">
+                        <line x1="100" y1="100" x2="100" y2="40" 
+                              stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                        <circle cx="100" cy="100" r="6" fill="#fff"/>
+                    </g>
+                </svg>
+                
+                <div class="speed-display">
+                    <div class="speed-value" id="speedValue">0</div>
+                    <div class="speed-unit" id="speedUnit">km/h</div>
+                </div>
+            </div>
+            
+            <div class="max-speed-box">
+                <div>
+                    <div class="max-speed-label">Max Speed</div>
+                    <div class="max-speed-value" id="maxSpeedValue">0 km/h</div>
+                </div>
+                <button class="reset-btn" id="resetBtn">Reset</button>
+            </div>
+            
+            <button class="control-btn start-btn" id="controlBtn">Start Tracking</button>
+            
+            <div id="messageBox"></div>
+        </div>
+    </div>
+
+    <script>
+        let speed = 0;
+        let maxSpeed = 0;
+        let unit = 'km/h';
+        let tracking = false;
+        let watchId = null;
+
+        const speedValue = document.getElementById('speedValue');
+        const speedUnit = document.getElementById('speedUnit');
+        const maxSpeedValue = document.getElementById('maxSpeedValue');
+        const unitBtn = document.getElementById('unitBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const controlBtn = document.getElementById('controlBtn');
+        const messageBox = document.getElementById('messageBox');
+        const needle = document.getElementById('needle');
+        const speedArc = document.getElementById('speedArc');
+
+        function updateDisplay() {
+            speedValue.textContent = Math.round(speed);
+            speedUnit.textContent = unit;
+            maxSpeedValue.textContent = `${Math.round(maxSpeed)} ${unit}`;
+            unitBtn.textContent = unit;
+
+            const maxRange = unit === 'km/h' ? 200 : 120;
+            const speedPercentage = Math.min((speed / maxRange) * 100, 100);
+            const rotation = (speedPercentage / 100) * 270 - 135;
+            
+            needle.style.transform = `rotate(${rotation}deg)`;
+            needle.style.transformOrigin = '100px 100px';
+            
+            const dashArray = speedPercentage * 2.67;
+            speedArc.setAttribute('stroke-dasharray', `${dashArray} 267`);
+        }
+
+        function showMessage(text, isError = false) {
+            messageBox.className = `message ${isError ? 'error-message' : 'info-message'}`;
+            messageBox.textContent = text;
+            messageBox.style.display = 'block';
+        }
+
+        function hideMessage() {
+            messageBox.style.display = 'none';
+        }
+
+        function toggleUnit() {
+            const oldUnit = unit;
+            unit = unit === 'km/h' ? 'mph' : 'km/h';
+            
+            if (oldUnit === 'km/h') {
+                speed = speed / 1.60934;
+                maxSpeed = maxSpeed / 1.60934;
+            } else {
+                speed = speed * 1.60934;
+                maxSpeed = maxSpeed * 1.60934;
+            }
+            
+            updateDisplay();
+        }
+
+        function resetMaxSpeed() {
+            maxSpeed = speed;
+            updateDisplay();
+        }
+
+        function toggleTracking() {
+            if (!tracking) {
+                if ('geolocation' in navigator) {
+                    speed = 0;
+                    maxSpeed = 0;
+                    tracking = true;
+                    controlBtn.textContent = 'Stop Tracking';
+                    controlBtn.className = 'control-btn stop-btn';
+                    
+                    watchId = navigator.geolocation.watchPosition(
+                        (position) => {
+                            if (position.coords.speed !== null) {
+                                const speedInMs = Math.max(0, position.coords.speed);
+                                speed = unit === 'km/h' ? speedInMs * 3.6 : speedInMs * 2.23694;
+                                
+                                if (speed > maxSpeed) {
+                                    maxSpeed = speed;
+                                }
+                                
+                                updateDisplay();
+                                hideMessage();
+                            }
+                        },
+                        (error) => {
+                            showMessage('Unable to get location. Please enable GPS.', true);
+                            console.error(error);
+                        },
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 5000,
+                            maximumAge: 0
+                        }
+                    );
+                    
+                    showMessage('Tracking started. Move to see speed.');
+                } else {
+                    showMessage('Geolocation is not supported by your browser.', true);
+                }
+            } else {
+                tracking = false;
+                if (watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                }
+                controlBtn.textContent = 'Start Tracking';
+                controlBtn.className = 'control-btn start-btn';
+                showMessage('Press "Start Tracking" to begin. Make sure location services are enabled.');
+            }
+        }
+
+        unitBtn.addEventListener('click', toggleUnit);
+        resetBtn.addEventListener('click', resetMaxSpeed);
+        controlBtn.addEventListener('click', toggleTracking);
+
+        // Initial message
+        showMessage('Press "Start Tracking" to begin. Make sure location services are enabled.');
+        updateDisplay();
+    </script>
+</body>
+</html>
